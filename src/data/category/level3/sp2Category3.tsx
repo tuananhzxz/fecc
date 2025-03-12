@@ -1,20 +1,59 @@
 export const sp2Category3 = [
+    // Danh mục con cho Đầm dự tiệc
     {
-        "name" : "Sản phẩm số 2231",
-        "categoryId" : "San_pham_so_2231",
-        "parentCategoryId" : "San_pham_so_221",
-        "level" : 2,
+        "name": "Đầm dự tiệc dài",
+        "categoryId": "Dam_du_tiec_dai",
+        "parentCategoryId": "Dam_du_tiec",
+        "level": 3,
     },
     {
-        "name" : "Sản phẩm số 2232",
-        "categoryId" : "San_pham_so_2232",
-        "parentCategoryId" : "San_pham_so_222",
-        "level" : 2,
+        "name": "Đầm dự tiệc ngắn",
+        "categoryId": "Dam_du_tiec_ngan",
+        "parentCategoryId": "Dam_du_tiec",
+        "level": 3,
     },
     {
-        "name" : "Sản phẩm số 3333",
-        "categoryId" : "San_pham_so_333",
-        "parentCategoryId" : "San_pham_so_333",
-        "level" : 2,
+        "name": "Đầm dự tiệc ôm",
+        "categoryId": "Dam_du_tiec_om",
+        "parentCategoryId": "Dam_du_tiec",
+        "level": 3,
     },
-]
+    // Danh mục con cho Đầm công sở
+    {
+        "name": "Đầm công sở ngắn",
+        "categoryId": "Dam_cong_so_ngan",
+        "parentCategoryId": "Dam_cong_so",
+        "level": 3,
+    },
+    {
+        "name": "Đầm công sở dài",
+        "categoryId": "Dam_cong_so_dai",
+        "parentCategoryId": "Dam_cong_so",
+        "level": 3,
+    },
+    {
+        "name": "Đầm công sở suông",
+        "categoryId": "Dam_cong_so_suong",
+        "parentCategoryId": "Dam_cong_so",
+        "level": 3,
+    },
+    // Danh mục con cho Đầm cocktail
+    {
+        "name": "Đầm cocktail dài",
+        "categoryId": "Dam_cocktail_dai",
+        "parentCategoryId": "Dam_cocktail",
+        "level": 3,
+    },
+    {
+        "name": "Đầm cocktail ngắn",
+        "categoryId": "Dam_cocktail_ngan",
+        "parentCategoryId": "Dam_cocktail",
+        "level": 3,
+    },
+    {
+        "name": "Đầm cocktail ôm",
+        "categoryId": "Dam_cocktail_om",
+        "parentCategoryId": "Dam_cocktail",
+        "level": 3,
+    }
+];

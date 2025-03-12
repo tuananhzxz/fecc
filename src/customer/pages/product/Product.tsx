@@ -3,13 +3,14 @@ import ProductCard from './ProductCard'
 import FilterSection from './FilterSection'
 import { Box, Divider, FormControl, IconButton, InputLabel, MenuItem, Pagination, Select, SelectChangeEvent, useTheme } from '@mui/material'
 import { FilterAlt } from '@mui/icons-material'
-import { useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import {sortOptions} from "../../../data/filter/sort";
 import { useAppDispatch, useAppSelector } from '../../../state/Store'
 import { getAllProducts, isColorMatched, ProductParams } from '../../../state/customer/ProductCustomerSlice'
 import { Product as ProductCus } from '../../../state/customer/ProductCustomerSlice';
 
 const Product = () => {
+    const { category } = useParams();
     const theme = useTheme();
     const dispatch = useAppDispatch();
     const isLargeScreen = theme.breakpoints.up('lg');
@@ -20,7 +21,7 @@ const Product = () => {
 
     useEffect(() => {        
         const params: ProductParams = {
-            category: searchParam.get('category') || undefined,
+            category: category || searchParam.get('category') || undefined,
             minPrice: searchParam.get('price') ? 
                 Number(searchParam.get('price')?.split('-')[0] || 0) : 
                 undefined,
@@ -37,13 +38,13 @@ const Product = () => {
         };
         
         dispatch(getAllProducts(params));
-    }, [dispatch, searchParam]);
+    }, [dispatch, searchParam, category]);
 
     useEffect(() => {
         const colorParam = searchParam.get('color');
         
         if (colorParam && allProducts.length > 0) {
-            const filtered = allProducts.filter(product => 
+            const filtered = allProducts.filter((product: ProductCus) => 
                 isColorMatched(product.color, colorParam)
             );
             setFilteredProducts(filtered);

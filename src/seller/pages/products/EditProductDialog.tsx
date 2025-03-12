@@ -26,7 +26,6 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
   product 
 }) => {
   const dispatch = useAppDispatch();
-  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -35,7 +34,6 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
     quantity: '',
     color: '',
     sizes: '',
-    category: '',
     images: [] as string[]
   });
 
@@ -52,7 +50,6 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
         quantity: product.quantity?.toString() || '',
         color: product.color || '',
         sizes: product.sizes || '',
-        category: product.category?.name || '',
         images: product.images || []
       });
     }
@@ -78,11 +75,11 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
         id: product.id,
         request: {
           ...formData,
+          title: formData.title,
+          description: formData.description,
           mrpPrice: parseFloat(formData.mrpPrice),
           sellingPrice: parseFloat(formData.sellingPrice),
-          quantity: parseInt(formData.quantity),
-          category2: formData.category,
-          category3: formData.category
+          quantity: parseInt(formData.quantity)
         }
       };
 
@@ -195,19 +192,6 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
                   value={formData.sizes}
                   onChange={handleChange}
                   fullWidth
-                  variant="outlined"
-                  margin="dense"
-                />
-              </Grid>
-
-              <Grid item xs={12}>
-                <TextField
-                  name="category"
-                  label="Danh mục"
-                  value={formData.category}
-                  onChange={handleChange}
-                  fullWidth
-                  required
                   variant="outlined"
                   margin="dense"
                 />

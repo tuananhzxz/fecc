@@ -1,20 +1,41 @@
 export const sp3Category3 = [
+    // Danh mục con cho Váy dài
     {
-        "name" : "Sản phẩm số 2231111",
-        "categoryId" : "San_pham_so_223111",
-        "parentCategoryId" : "San_pham_so_22311",
-        "level" : 2,
+        "name": "Váy dài xòe",
+        "categoryId": "Vay_dai_xoe",
+        "parentCategoryId": "Vay_dai",
+        "level": 3,
     },
     {
-        "name" : "Sản phẩm số 223222",
-        "categoryId" : "San_pham_so_223222",
-        "parentCategoryId" : "San_pham_so_22322",
-        "level" : 2,
+        "name": "Váy dài ôm",
+        "categoryId": "Vay_dai_om",
+        "parentCategoryId": "Vay_dai",
+        "level": 3,
+    },
+    // Danh mục con cho Váy ngắn
+    {
+        "name": "Váy ngắn xòe",
+        "categoryId": "Vay_ngan_xoe",
+        "parentCategoryId": "Vay_ngan",
+        "level": 3,
     },
     {
-        "name" : "Sản phẩm số 333333",
-        "categoryId" : "San_pham_so_333333",
-        "parentCategoryId" : "San_pham_so_33333",
-        "level" : 2,
+        "name": "Váy ngắn ôm",
+        "categoryId": "Vay_ngan_om",
+        "parentCategoryId": "Vay_ngan",
+        "level": 3,
     },
-]
+    // Danh mục con cho Váy cạp cao
+    {
+        "name": "Váy cạp cao xòe",
+        "categoryId": "Vay_cap_cao_xoe",
+        "parentCategoryId": "Vay_cap_cao",
+        "level": 3,
+    },
+    {
+        "name": "Váy cạp cao ôm",
+        "categoryId": "Vay_cap_cao_om",
+        "parentCategoryId": "Vay_cap_cao",
+        "level": 3,
+    }
+];

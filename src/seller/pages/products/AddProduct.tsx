@@ -38,15 +38,17 @@ import { uploadToCloud } from '../../../utils/uploadToCloud';
 
 // Constants
 const categoryTwo: {[key: string]: string[]} = {
-  electronic: ['Điện thoại', 'Máy tính bảng', 'Laptop', 'Máy ảnh', 'Máy quay phim', 'Phụ kiện'],
-  fashion: ['Áo', 'Quần', 'Giày', 'Túi xách', 'Phụ kiện'],
-  beauty: ['Mỹ phẩm', 'Chăm sóc da', 'Chăm sóc tóc', 'Trang điểm', 'Nước hoa'],
+  Áo: ['Áo sơ mi', 'Áo thun', 'Áo khoác'],
+  Đầm: ['Đầm dự tiệc', 'Đầm công sở', 'Đầm cocktail'],
+  Váy: ['Váy dài', 'Váy ngắn', 'Váy cạp cao'],
+  'Set đồ': ['Set đồ thể thao', 'Set đồ mùa hè', 'Set đồ mùa đông'],
 };
 
 const categoryThree: {[key: string]: string[]} = {
-  electronic: ['Điện thoại 1', 'Máy tính bảng 1', 'Laptop 1', 'Máy ảnh 1', 'Máy quay phim 1', 'Phụ kiện 1'],
-  fashion: ['Áo 1', 'Quần 1', 'Giày 1', 'Túi xách 1', 'Phụ kiện 1'],
-  beauty: ['Mỹ phẩm 1', 'Chăm sóc da 1', 'Chăm sóc tóc 1', 'Trang điểm 1', 'Nước hoa 1'],
+  Áo: ['Áo sơ mi nam', 'Áo sơ mi nữ', 'Áo sơ mi trắng', 'Áo sơ mi xanh'],
+  Đầm: ['Đầm dự tiệc dài', 'Đầm dự tiệc ngắn', 'Đầm dự tiệc ôm', 'Đầm công sở ngắn', 'Đầm công sở dài', 'Đầm công sở suông', 'Đầm cocktail dài', 'Đầm cocktail ngắn', 'Đầm cocktail ôm'],
+  Váy: ['Váy dài xòe', 'Váy dài ôm', 'Váy ngắn xòe', 'Váy ngắn ôm', 'Váy cạp cao xòe', 'Váy cạp cao ôm'],
+  'Set đồ': ['Set đồ thể thao nam', 'Set đồ thể thao nữ', 'Set đồ mùa hè nhẹ', 'Set đồ mùa hè thoáng', 'Set đồ mùa đông ấm', 'Set đồ mùa đông dày'],
 };
 
 const colors = [
@@ -57,7 +59,7 @@ const sizes = [
   'XS', 'S', 'M', 'L', 'XL', 'XXL', '35', '36', '37', '38', '39', '40', '41', '42'
 ];
 
-const mainCategories = ['electronic', 'fashion', 'beauty'];
+const mainCategories = ['Áo', 'Đầm', 'Váy', 'Set đồ'];
 
 const validationSchema = Yup.object({
   title: Yup.string().required('Vui lòng nhập tên sản phẩm'),
@@ -559,7 +561,6 @@ const AddProduct: React.FC = () => {
                       variant="contained"
                       color="primary"
                       startIcon={<Save />}
-                      disabled={!formik.isValid || formik.isSubmitting}
                     >
                       Lưu sản phẩm
                     </Button>

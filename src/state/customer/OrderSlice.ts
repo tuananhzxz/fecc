@@ -86,21 +86,6 @@ export const cancelOrder = createAsyncThunk(
   }
 );
 
-export const handlePaymentSuccess = createAsyncThunk(
-    'order/handlePaymentSuccess',
-    async ({ paymentId, paymentLinkId }: { paymentId: string, paymentLinkId: string }, { rejectWithValue }) => {
-      try {
-        const response = await api.get(`/api/payment/${paymentId}`, {
-          params: { paymentLinkId },
-          headers: {  'Authorization': `Bearer ${token}` }
-        });
-        return response.data;
-      } catch (error : any) {
-        return rejectWithValue(error.response.data);
-      }
-    }
-  );
-
 const orderSlice = createSlice({
   name: 'order',
   initialState,
@@ -180,18 +165,6 @@ const orderSlice = createSlice({
         state.currentOrder = action.payload;
       })
       .addCase(cancelOrder.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload as string;
-      })
-      .addCase(handlePaymentSuccess.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(handlePaymentSuccess.fulfilled, (state) => {
-        state.loading = false;
-        state.paymentSuccess = true;
-      })
-      .addCase(handlePaymentSuccess.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
       });

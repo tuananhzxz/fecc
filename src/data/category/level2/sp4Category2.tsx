@@ -1,20 +1,20 @@
 export const sp4Category2 = [
     {
-        "name" : "Sản phẩm số 223111",
-        "categoryId" : "San_pham_so_223111",
-        "parentCategoryId" : "Sanpham4",
-        "level" : 2,
+        "name": "Set đồ thể thao",
+        "categoryId": "Setdo_the_thao",
+        "parentCategoryId": "Setdo",
+        "level": 2,
     },
     {
-        "name" : "Sản phẩm số 223221",
-        "categoryId" : "San_pham_so_223222",
-        "parentCategoryId" : "Sanpham4",
-        "level" : 2,
+        "name": "Set đồ mùa hè",
+        "categoryId": "Setdo_mua_he",
+        "parentCategoryId": "Setdo",
+        "level": 2,
     },
     {
-        "name" : "Sản phẩm số 333331",
-        "categoryId" : "San_pham_so_333333",
-        "parentCategoryId" : "Sanpham4",
-        "level" : 2,
-    },
+        "name": "Set đồ mùa đông",
+        "categoryId": "Setdo_mua_dong",
+        "parentCategoryId": "Setdo",
+        "level": 2,
+    }
 ]

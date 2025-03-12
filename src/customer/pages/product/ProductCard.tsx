@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import "./ProductCard.css";
-import { Button } from '@mui/material';
+import { Button, Rating } from '@mui/material';
 import { 
   FavoriteBorderOutlined, 
   ModeCommentOutlined, 
   ShoppingCart, 
-  Star,
   Close 
 } from '@mui/icons-material';
 import { Product } from '../../../state/customer/ProductCustomerSlice';
@@ -14,8 +13,10 @@ import { addItemToCart } from '../../../state/customer/CartSlice';
 import { useAppDispatch, useAppSelector } from '../../../state/Store';
 import { toast } from 'react-toastify';
 import { addToWishlist } from '../../../state/wishlist/WishListSlice';
+import { fetchReviewsByProductId } from '../../../state/review/ReviewSlice';
+import { Review } from '../../../types/ReviewType';
 
-interface ProductCardProps {
+interface ProductCardProps {  
   product: Product;
 }
 
@@ -29,6 +30,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState('');
 
+
   useEffect(() => {
     let interval: any;
     if (isHovered) {
@@ -41,6 +43,24 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     }
     return () => clearInterval(interval);
   }, [isHovered, product.images.length]);
+
+  const getReviews = async () => {
+    const result = await dispatch(fetchReviewsByProductId(Number(product.id)));
+    return result.payload;
+  }
+
+  const [averageRating, setAverageRating] = useState(0);
+
+  useEffect(() => {
+    const calculateRating = async () => {
+      const reviews = await getReviews();
+      if (reviews && reviews.length > 0) {
+        const avg = reviews.reduce((sum: number, review: Review) => sum + review.rating, 0) / reviews.length;
+        setAverageRating(avg);
+      }
+    };
+    calculateRating();
+  }, [product.id]);
 
   const handleAddtoWishlist = async () => {
     try {
@@ -163,17 +183,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
 
         <div className="details w-full pt-3 space-y-2 group-hover-effect rounded-md bg-white p-4">
           <div className="flex items-center gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star 
-                key={star} 
-                sx={{
-                  // color: star <= (product.rating || 0) ? '#ffd700' : '#e0e0e0',
-                  fontSize: '16px'
-                }}
-              />
-            ))}
+            <Rating value={averageRating} readOnly precision={0.5} />
             <span className="text-sm text-gray-500 ml-1">
-              ({product.numRatings || 0})
+              {product.reviews.length || 0} đánh giá
             </span>
           </div>
 

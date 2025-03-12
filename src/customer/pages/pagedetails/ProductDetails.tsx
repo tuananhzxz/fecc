@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import StarIcon from '@mui/icons-material/Star';
-import { Box, Button, CircularProgress, Divider, Modal, Rating, TextField } from "@mui/material";
+import { Box, Button, CircularProgress, Divider, Modal, Rating } from "@mui/material";
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import SimilarProduct from "./SimilarProduct";
 import ReviewCard from "../review/ReviewCard";
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../state/Store';
 import { getProductById } from '../../../state/customer/ProductCustomerSlice';
 import { ShareIcon } from 'lucide-react';
@@ -17,6 +17,9 @@ import CachedIcon from '@mui/icons-material/Cached';
 import SecurityIcon from '@mui/icons-material/Security';
 import { createReview, fetchReviewsByProductId, updateReview } from '../../../state/review/ReviewSlice';
 import { Review } from '../../../types/ReviewType';
+import { addItemToCart } from '../../../state/customer/CartSlice';
+import { toast } from 'react-toastify';
+import { addToWishlist } from '../../../state/wishlist/WishListSlice';
 
 const ProductDetails = () => {
   const { productId } = useParams<{ 
@@ -24,13 +27,15 @@ const ProductDetails = () => {
     title: string;
     productId: string;
   }>();
-  
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { selectedProduct: product, loading } = useAppSelector(state => state.product);
   const { reviews, loading: reviewLoading, error: reviewError } = useAppSelector(state => state.reviewSlice);
 
   const [selectedImg, setSelectedImg] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedSize, setSelectedSize] = useState('');
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [reviewText, setReviewText] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
@@ -47,6 +52,21 @@ const ProductDetails = () => {
     }
   }, [dispatch, productId]);
 
+  // Set default selections when product data is loaded
+  useEffect(() => {
+    if (product) {
+      const colors = product.color.split(',').map(c => c.trim());
+      const sizes = product.sizes.split(',').map(s => s.trim());
+      
+      if (colors.length > 0 && !selectedColor) {
+        setSelectedColor(colors[0]);
+      }
+      
+      if (sizes.length > 0 && !selectedSize) {
+        setSelectedSize(sizes[0]);
+      }
+    }
+  }, [product]);
 
   if (loading) {
     return (
@@ -55,6 +75,66 @@ const ProductDetails = () => {
       </div>
     );
   }
+
+  const handleAddToCart = async () => {
+    try {
+      await dispatch(addItemToCart({
+        productId: product?.id || 0,
+        size: selectedSize,
+        quantity: quantity
+      })).unwrap();
+
+      toast.success('Đã thêm vào giỏ hàng!', {
+        position: "bottom-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      
+      setSelectedSize('');
+      setQuantity(quantity);
+
+    } catch (error) {
+      toast.error('Không thể thêm vào giỏ hàng!', {
+        position: "bottom-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handleBuynow = async () => {
+    try {
+      handleAddToCart();
+      navigate('/cart');
+    } catch (error) {
+      toast.error('Không thể thêm vào giỏ hàng!', {
+        position: "bottom-right",
+        autoClose: 3000,
+      });
+    }
+  }
+
+  const handleAddToWishlist = async () => {
+    try {
+      await dispatch(addToWishlist(product?.id || 0)).unwrap();
+      toast.success('Đã thêm vào danh sách yêu thích!', {
+        position: "bottom-right",
+        autoClose: 2000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (error) {
+      toast.error('Không thể thêm vào danh sách yêu thích!', {
+        position: "bottom-right",
+        autoClose: 3000,
+      });
+    }
+  };
+  
 
   const handleCreateReview = () => {
     if (productId) {
@@ -97,6 +177,14 @@ const ProductDetails = () => {
     setReviewText(review.reviewText);
     setReviewRating(review.rating);
     setIsReviewModalOpen(true);
+  };
+
+  const handleColorSelect = (color: string) => {
+    setSelectedColor(color);
+  };
+
+  const handleSizeSelect = (size: string) => {
+    setSelectedSize(size);
   };
 
   if (!product) {
@@ -175,6 +263,12 @@ const ProductDetails = () => {
     ((product.mrpPrice - product.sellingPrice) / product.mrpPrice) * 100
   );
 
+  const colorsArray = product.color.split(',').map(c => c.trim());
+  const sizesArray = product.sizes.split(',').map(s => s.trim());
+
+  // Check if selections are valid
+  const isValidSelection = selectedColor && selectedSize;
+
   return (
     <div className='min-h-screen bg-gray-50'>
       {/* Hero Section với breadcrumb */}
@@ -210,7 +304,7 @@ const ProductDetails = () => {
                   </div>
                   {/* Quick Actions */}
                   <div className="absolute top-4 right-4 space-y-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-3 bg-white rounded-full shadow-lg hover:bg-red-50 transition-colors">
+                    <button className="p-3 bg-white rounded-full shadow-lg hover:bg-red-50 transition-colors" onClick={handleAddToWishlist}>
                       <FavoriteIcon className="text-red-500 w-5 h-5" />
                     </button>
                     <button className="p-3 bg-white rounded-full shadow-lg hover:bg-blue-50 transition-colors">
@@ -285,6 +379,25 @@ const ProductDetails = () => {
                 </div>
               </div>
 
+              {/* Selected Options Summary */}
+              {(selectedColor || selectedSize) && (
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">Đã chọn:</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedColor && (
+                      <span className="px-3 py-1 bg-white rounded-full text-sm border border-gray-200">
+                        Màu: {selectedColor}
+                      </span>
+                    )}
+                    {selectedSize && (
+                      <span className="px-3 py-1 bg-white rounded-full text-sm border border-gray-200">
+                        Size: {selectedSize}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Variants Selection */}
               <div className="space-y-6">
                 {/* Colors */}
@@ -293,17 +406,19 @@ const ProductDetails = () => {
                     Màu sắc
                   </label>
                   <div className="flex flex-wrap gap-3">
-                    {product.color.split(',').map((color, index) => (
+                    {colorsArray.map((color, index) => (
                       <button
                         key={index}
                         className={`
                           px-4 py-2 rounded-full text-sm
-                          border-2 border-transparent hover:border-red-500
-                          focus:outline-none focus:border-red-500
-                          transition-colors
+                          ${selectedColor === color 
+                            ? 'bg-red-500 text-white border-2 border-red-500' 
+                            : 'bg-white border-2 border-gray-200 hover:border-red-300'}
+                          focus:outline-none transition-colors
                         `}
+                        onClick={() => handleColorSelect(color)}
                       >
-                        {color.trim()}
+                        {color}
                       </button>
                     ))}
                   </div>
@@ -315,17 +430,19 @@ const ProductDetails = () => {
                     Kích thước
                   </label>
                   <div className="flex flex-wrap gap-3">
-                    {product.sizes.split(',').map((size, index) => (
+                    {sizesArray.map((size, index) => (
                       <button
                         key={index}
                         className={`
                           w-12 h-12 rounded-lg flex items-center justify-center
-                          border-2 border-transparent hover:border-red-500
-                          focus:outline-none focus:border-red-500
-                          transition-colors text-sm font-medium
+                          ${selectedSize === size 
+                            ? 'bg-red-500 text-white border-2 border-red-500' 
+                            : 'bg-white border-2 border-gray-200 hover:border-red-300'}
+                          focus:outline-none transition-colors text-sm font-medium
                         `}
+                        onClick={() => handleSizeSelect(size)}
                       >
-                        {size.trim()}
+                        {size}
                       </button>
                     ))}
                   </div>
@@ -360,14 +477,41 @@ const ProductDetails = () => {
 
               {/* Action Buttons */}
               <div className="pt-6 space-y-4">
-                <button className="w-full py-4 bg-red-600 text-white rounded-xl flex items-center justify-center gap-2 hover:bg-red-700 transition-colors">
+                <button 
+                  className={`
+                    w-full py-4 rounded-xl flex items-center justify-center gap-2 transition-colors
+                    ${isValidSelection 
+                      ? 'bg-red-600 text-white hover:bg-red-700' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'}
+                  `}
+                  disabled={!isValidSelection}
+                  title={!isValidSelection ? "Vui lòng chọn màu sắc và kích thước" : ""}
+                  onClick={handleAddToCart}
+                >
                   <ShoppingCartIcon className="w-5 h-5" />
                   Thêm vào giỏ hàng
                 </button>
-                <button className="w-full py-4 border-2 border-red-600 text-red-600 rounded-xl hover:bg-red-50 transition-colors">
+                <button 
+                  className={`
+                    w-full py-4 rounded-xl transition-colors
+                    ${isValidSelection 
+                      ? 'border-2 border-red-600 text-red-600 hover:bg-red-50' 
+                      : 'border-2 border-gray-300 text-gray-400 cursor-not-allowed'}
+                  `}
+                  disabled={!isValidSelection}
+                  title={!isValidSelection ? "Vui lòng chọn màu sắc và kích thước" : ""}
+                  onClick={handleBuynow}
+                >
                   Mua ngay
                 </button>
               </div>
+
+              {/* Selection Error Message */}
+              {!isValidSelection && (
+                <div className="text-sm text-red-500 text-center">
+                  Vui lòng chọn cả màu sắc và kích thước trước khi đặt hàng
+                </div>
+              )}
 
               {/* Product Features */}
               <div className="pt-6 space-y-4">

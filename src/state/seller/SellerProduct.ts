@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { api } from '../../config/Api';
 import { ProductSeller } from '../../types/ProductType';
 
+
 export const fetchSellerProducts = createAsyncThunk<ProductSeller[], any> (
     "seller/fetchProducts",
     async(jwt, {rejectWithValue}) => {
@@ -31,9 +32,9 @@ interface CreateProductRequest {
     quantity: number;
     color: string;
     images: string[];
-    category: string;
-    category2: string | null;
-    category3: string | null;
+    category?: string;
+    category2?: string | null;
+    category3?: string | null;
     sizes: string;
   }
   

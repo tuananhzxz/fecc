@@ -15,6 +15,10 @@ import dealAdminSlice from './admin/DealAdmin';
 import WishlistSlice from './wishlist/WishListSlice';
 import sellerOrderSlice from './seller/SellerOrderSlice';
 import reviewSlice from './review/ReviewSlice';
+import PaymentHandleSlice from "./customer/PaymentHandleSlice";
+import TransactionSlice from "./seller/transaction/TransactionSlice";
+import sellerReportSlice from "./seller/report/SellerReportSlice";
+import paymentOrderSlice from "./seller/report/PaymentOrderSlice";
 
 const rootReducer = combineReducers({
   couponAdmin : couponSlice,
@@ -30,7 +34,11 @@ const rootReducer = combineReducers({
   dealAdmin : dealAdminSlice,
   wishlist : WishlistSlice,
   sellerOrderSlice : sellerOrderSlice,
-  reviewSlice : reviewSlice
+  reviewSlice : reviewSlice,
+  paymentSlice: PaymentHandleSlice,
+  transactionSlice : TransactionSlice,
+  sellerReportSlice : sellerReportSlice,
+  paymentOrderSlice : paymentOrderSlice
 });
 
 export const store = configureStore({

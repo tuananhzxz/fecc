@@ -13,9 +13,13 @@ const Wishlist = () => {
   const { wishlist, loading, error } = useSelector((state: RootState) => state.wishlist);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const isAuthenticated = useSelector((state: RootState) => state.auth.User_Role !== null);
+
   useEffect(() => {
-    dispatch(fetchWishlist());
-  }, [dispatch]);
+    if (isAuthenticated) {
+      dispatch(fetchWishlist());
+    }
+  }, [dispatch, isAuthenticated]);
 
   if (loading) {
     return (

@@ -27,6 +27,7 @@ const Navbar = () => {
     const { user, jwt, User_Role } = useAppSelector(state => state.auth);
     const cart = useAppSelector(state => state.cart);
     const isAuthenticated = !!jwt;
+    const isSeller = localStorage.getItem("sellerToken");
 
     useEffect(() => {
         if (jwt) {
@@ -192,7 +193,8 @@ const Navbar = () => {
                                     </div>
                                 </div>
                             </div>
-                        ) : (
+                        ) : (!isSeller ? 
+                        (
                             <Button
                                 variant="contained"
                                 onClick={() => navigate('/login-user')}
@@ -203,7 +205,18 @@ const Navbar = () => {
                             >
                                 Đăng nhập
                             </Button>
-                        )}
+                        ) : (
+                            <Button
+                                variant="contained"
+                                onClick={() => navigate('/seller/')}
+                                sx={{
+                                    borderRadius: '8px',
+                                    textTransform: 'none'
+                                }}
+                            >
+                                Trang quản trị
+                            </Button>
+                        ))}
                     </div>
                 </div>
             </div>

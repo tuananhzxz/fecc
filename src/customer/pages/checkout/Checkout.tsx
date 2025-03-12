@@ -3,11 +3,10 @@ import {Box, Button, Modal} from "@mui/material";
 import AddressCard from "./AddressCard";
 import AddressForm from "./AddressForm";
 import {CreditCard, DollarSign} from "lucide-react";
-import { RootState, useAppDispatch } from '../../../state/Store';
+import { useAppDispatch } from '../../../state/Store';
 import { useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { createOrder, handlePaymentSuccess } from '../../../state/customer/OrderSlice';
-import { Address, User } from '../../../types/UserType';
+import { createOrder } from '../../../state/customer/OrderSlice';
+import { Address } from '../../../types/UserType';
 import { getUserProfile } from '../../../state/customer/AuthSliceCus';
 import { toast } from 'react-toastify';
 
@@ -26,19 +25,11 @@ const Checkout = () => {
     const handleOpen = () => setOpen(true);
     const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
     const [addresses, setAddresses] = useState<Address[]>([]);
-    const { paymentSuccess, error } = useSelector((state: RootState) => state.order);
     const handleClose = () => setOpen(false);
 
     const [selectedMethod, setSelectedMethod] = useState('');
 
     useEffect(() => {
-        const searchParams = new URLSearchParams(location.search);
-        const paymentId = searchParams.get('payment_id');
-        const paymentLinkId = searchParams.get('payment_link_id');
-
-        if (paymentId && paymentLinkId) {
-            dispatch(handlePaymentSuccess({ paymentId, paymentLinkId }));
-        }
         dispatch(getUserProfile(localStorage.getItem('token') || '')).then((user : any) => {
             setAddresses(user.payload.addresses);
         });

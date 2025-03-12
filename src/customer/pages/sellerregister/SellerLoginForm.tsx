@@ -13,6 +13,7 @@ import * as Yup from 'yup';
 import StyledTextField from "./StyledTextField";
 import { useAppDispatch } from '../../../state/Store';
 import { loginSeller, sendLoginSignupOtp, verifySellerOtp } from '../../../state/seller/AuthSlice';
+import { useNavigate } from 'react-router-dom';
 
 const SellerLoginForm: React.FC = () => {
   // Định nghĩa các stage của form login
@@ -20,7 +21,7 @@ const SellerLoginForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [userEmail, setUserEmail] = useState('');
-  
+  const navigate = useNavigate();
   // Thêm state cho việc đếm ngược gửi lại OTP
   const [resendCountdown, setResendCountdown] = useState(0);
   
@@ -126,9 +127,7 @@ const SellerLoginForm: React.FC = () => {
   
               if (loginResponse.success) {
                 // Xử lý đăng nhập thành công
-                console.log('Đăng nhập thành công');
-                // Chuyển hướng hoặc các xử lý khác
-                // navigate('/seller/dashboard');
+                navigate('/seller');
               } else {
                 setErrorMessage(loginResponse.message || 'Đăng nhập thất bại');
               }
