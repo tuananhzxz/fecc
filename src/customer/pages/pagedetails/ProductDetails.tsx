@@ -277,7 +277,7 @@ const ProductDetails = () => {
           <div className="flex items-center text-sm text-gray-500">
             <Link to="/" className="hover:text-red-500">Trang chủ</Link>
             <span className="mx-2">/</span>
-            <Link to={`/category/${product.category?.id}`} className="hover:text-red-500">
+            <Link to={`/products/${product.category?.categoryId}`} className="hover:text-red-500">
               {product.category?.name}
             </Link>
             <span className="mx-2">/</span>

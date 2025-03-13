@@ -21,7 +21,11 @@ import {
   FormControl,
   InputLabel,
   Select,
-  InputAdornment
+  InputAdornment,
+  DialogContent,
+  Dialog,
+  DialogTitle,
+  DialogActions
 } from '@mui/material';
 import HistoryIcon from '@mui/icons-material/History';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -35,12 +39,14 @@ import { getSellerReport } from '../../../state/seller/report/SellerReportSlice'
 import { useSelector } from 'react-redux';
 import { getPaymentOrders } from '../../../state/seller/report/PaymentOrderSlice';
 import { PaymentOrderStatus } from '../../../types/PaymentOrder';
+import { useNavigate } from 'react-router-dom';
 
 const Payment = () => {
   const dispatch = useAppDispatch();
-  const { reports, loading: reportLoading } = useSelector((state: RootState) => state.sellerReportSlice);
+  const { reports } = useSelector((state: RootState) => state.sellerReportSlice);
   const { paymentOrders, loading: paymentLoading } = useSelector((state: RootState) => state.paymentOrderSlice);
-  
+  const navigate = useNavigate();
+
   // Phân trang
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
@@ -144,6 +150,7 @@ const Payment = () => {
           variant="contained"
           startIcon={<HistoryIcon />}
           className="bg-indigo-600 hover:bg-indigo-700"
+          onClick={() => navigate("/seller/transaction")}
         >
           Xem lịch sử
         </Button>
@@ -166,7 +173,7 @@ const Payment = () => {
           </Typography>
           <Box className="flex items-center text-green-600">
             <ArrowUpwardIcon fontSize="small" />
-            <Typography variant="body2">+12.5% so với tháng trước</Typography>
+            <Typography variant="body2">+100% so với tháng trước</Typography>
           </Box>
         </Card>
 
@@ -203,7 +210,7 @@ const Payment = () => {
             <Typography variant="h4" className="font-bold">{successRate.toFixed(1)}%</Typography>
             <Box className="flex items-center text-green-600">
               <ArrowUpwardIcon fontSize="small" />
-              <Typography variant="body2">+2.1%</Typography>
+              <Typography variant="body2">+{successRate.toFixed(1)}%</Typography>
             </Box>
           </Box>
           <LinearProgress 

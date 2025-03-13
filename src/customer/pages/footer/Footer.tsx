@@ -7,7 +7,7 @@ const Footer = () => {
             <div className="max-w-6xl mx-auto px-4 py-8">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
                     <div className="space-y-4">
-                        <h3 className="text-xl font-bold">SHOP TANH VIP PRO</h3>
+                        <h3 className="text-xl font-bold">SHOP TANH VIP</h3>
                         <div className="space-y-2">
                             <div className="flex items-center gap-2">
                                 <MapPin size={18} />

@@ -1,10 +1,23 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { HomeCategoryType } from '../../../../types/HomeCategoryType'
+import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../../../state/Store';
+import { getProducts } from '../../../../state/customer/ProductCustomerSlice';
 
 const ShopByCategoryCard = ({ category } : { category : HomeCategoryType}) => {
+  const dispatch = useAppDispatch();
+  const {products} = useAppSelector((state) => state.product);
+
+  useEffect(() => {
+    dispatch(getProducts());
+  }, [dispatch]);
+  const navigate = useNavigate();
+
+  const numProducts = products.filter((product) => product.category.categoryId === category.categoryId).length;
+  
   return (
     <div className='w-80 flex flex-col items-center p-4 bg-white rounded-xl shadow-md hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 cursor-pointer group'>
-      <div className="w-64 h-64 overflow-hidden rounded-lg">
+      <div onClick={() => navigate(`/products/${category.categoryId}`)} className="w-64 h-64 overflow-hidden rounded-lg">
         <img 
           src={category.image} 
           alt={category.name} 
@@ -15,7 +28,7 @@ const ShopByCategoryCard = ({ category } : { category : HomeCategoryType}) => {
         {category.name}
       </h3>
       <p className="mt-1 text-sm text-gray-500">
-        10 sản phẩm
+        {numProducts} sản phẩm
       </p>
     </div>
   )

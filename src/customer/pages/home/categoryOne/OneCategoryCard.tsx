@@ -1,10 +1,13 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { HomeCategoryType } from '../../../../types/HomeCategoryType';
+import { useNavigate } from 'react-router-dom';
 
 const OneCategoryCard = ({ category } : { category : HomeCategoryType}) => {
+  const navigate = useNavigate();
   return (
     <Box
+      onClick={() => navigate(`/products/${category.categoryId}`)}
       className="group cursor-pointer p-3 rounded-lg transition-all duration-300 hover:bg-gray-50"
       sx={{
         display: 'flex',
