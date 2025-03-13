@@ -121,7 +121,8 @@ const Home = () => {
                     <span className="font-medium">Đăng ký ngay</span>
                   </Button>
 
-                  <Button 
+                  <Button
+                    onClick={() => navigate(`/about-us`)}
                     size="large" 
                     variant="outlined"
                     className="border-white text-white hover:bg-white/10 transition-all duration-300 px-8 py-3 rounded-full text-lg"

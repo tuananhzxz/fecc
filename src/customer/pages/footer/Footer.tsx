@@ -1,7 +1,10 @@
 import React from 'react';
 import { Facebook, Instagram, Mail, MapPin, Phone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Footer = () => {
+
+    const navigate = useNavigate();
     return (
         <footer className="bg-gray-50 mt-10">
             <div className="max-w-6xl mx-auto px-4 py-8">
@@ -27,20 +30,20 @@ const Footer = () => {
                     <div className="space-y-4">
                         <h3 className="text-xl font-bold">Liên kết nhanh</h3>
                         <ul className="space-y-2">
-                            <li><a href="#" className="hover:text-blue-500 transition">Trang chủ</a></li>
+                            <li><button onClick={() => navigate("/")} className="hover:text-blue-500 transition">Trang chủ</button></li>
                             <li><a href="#" className="hover:text-blue-500 transition">Sản phẩm</a></li>
-                            <li><a href="#" className="hover:text-blue-500 transition">Về chúng tôi</a></li>
-                            <li><a href="#" className="hover:text-blue-500 transition">Liên hệ</a></li>
+                            <li><button onClick={() => navigate("/about-us")} className="hover:text-blue-500 transition">Về chúng tôi</button></li>
+                            <li><button onClick={() => navigate("/contact")} className="hover:text-blue-500 transition">Liên hệ</button></li>
                         </ul>
                     </div>
 
                     <div className="space-y-4">
                         <h3 className="text-xl font-bold">Dịch vụ</h3>
                         <ul className="space-y-2">
-                            <li><a href="#" className="hover:text-blue-500 transition">Tư vấn</a></li>
-                            <li><a href="#" className="hover:text-blue-500 transition">Bảo hành</a></li>
-                            <li><a href="#" className="hover:text-blue-500 transition">Hỗ trợ</a></li>
-                            <li><a href="#" className="hover:text-blue-500 transition">FAQs</a></li>
+                            <li><button onClick={() => navigate("/advise")} className="hover:text-blue-500 transition">Tư vấn</button></li>
+                            <li><button onClick={() => navigate("/guarantee")} className="hover:text-blue-500 transition">Bảo hành</button></li>
+                            <li><button onClick={() => navigate("/support")} className="hover:text-blue-500 transition">Hỗ trợ</button></li>
+                            <li><button onClick={() => navigate("/faqs")} className="hover:text-blue-500 transition">FAQs</button></li>
                         </ul>
                     </div>
 

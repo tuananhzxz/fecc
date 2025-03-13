@@ -5,7 +5,13 @@ import {
     ShoppingBag, 
     Store, 
     Menu,
-    PersonOutline 
+    PersonOutline, 
+    HelpOutline,
+    Info,
+    ContactSupport,
+    QuestionAnswer,
+    Help,
+    Gavel
 } from '@mui/icons-material';
 import { Avatar, Box, Button, IconButton, useMediaQuery, useTheme, Tooltip, Badge } from '@mui/material';
 import { useNavigate } from "react-router-dom";
@@ -28,6 +34,15 @@ const Navbar = () => {
     const cart = useAppSelector(state => state.cart);
     const isAuthenticated = !!jwt;
     const isSeller = localStorage.getItem("sellerToken");
+
+    const supportLinks = [
+        { title: 'Về Chúng Tôi', path: '/about-us', icon: <Info fontSize="small" /> },
+        { title: 'Liên Hệ', path: '/contact', icon: <ContactSupport fontSize="small" /> },
+        { title: 'Tư Vấn', path: '/advise', icon: <QuestionAnswer fontSize="small" /> },
+        { title: 'Bảo Hành', path: '/guarantee', icon: <Gavel fontSize="small" /> },
+        { title: 'FAQs', path: '/faqs', icon: <Help fontSize="small" /> }
+      ];
+      
 
     useEffect(() => {
         if (jwt) {
@@ -102,6 +117,26 @@ const Navbar = () => {
                                 <Search />
                             </IconButton>
                         </Tooltip> */}
+
+                        <div className="relative group">
+                        <div onClick={() => navigate("/support")} className="flex items-center cursor-pointer px-4 py-2 hover:text-primary-color transition-colors">
+                            <HelpOutline className="mr-1" />
+                            <span className="font-medium">Hỗ Trợ</span>
+                        </div>
+                        <div className="absolute z-50 w-56 bg-white shadow-xl rounded-xl py-2 transform opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
+                            {supportLinks.map((link, index) => (
+                            <div
+                                key={index}
+                                onClick={() => navigate(link.path)}
+                                className="flex items-center px-6 py-3 hover:bg-gray-50 cursor-pointer"
+                            >
+                                {link.icon}
+                                <span className="ml-3">{link.title}</span>
+                            </div>
+                            ))}
+                        </div>
+                        </div>
+
                         <SearchComponent />
 
                         <Tooltip title="Yêu thích">

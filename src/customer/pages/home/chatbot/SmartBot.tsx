@@ -16,9 +16,15 @@ interface ConversationContext {
   userPreferences: {
     preferredCategories: string[];
     preferredSizes: string[];
+    preferredColors: string[];
+    preferredBrands: string[];
     priceRange?: { min: number; max: number };
+    preferredRating?: number;
+    preferredDiscount?: number;
   };
   lastInteraction: number;
+  previousQueries: any[];
+  searchHistory: string[];
 }
 
 const SmartChatBot = ({ products }: { products: Product[] }) => {
@@ -43,8 +49,12 @@ const SmartChatBot = ({ products }: { products: Product[] }) => {
     userPreferences: {
       preferredCategories: [],
       preferredSizes: [],
+      preferredColors: [],
+      preferredBrands: [],
     },
-    lastInteraction: Date.now()
+    lastInteraction: Date.now(),
+    previousQueries: [],
+    searchHistory: []
   });
 
   // Utility functions
@@ -84,6 +94,8 @@ const SmartChatBot = ({ products }: { products: Product[] }) => {
     const preferences: any = {
       categories: [],
       sizes: [],
+      colors: [],
+      brands: []
     };
     
     const messageLower = message.toLowerCase();
@@ -96,6 +108,18 @@ const SmartChatBot = ({ products }: { products: Product[] }) => {
     // Phân tích sizes
     ['s', 'm', 'l', 'xl'].forEach(size => {
       if (messageLower.includes(size)) preferences.sizes.push(size);
+    });
+    
+    // Phân tích màu sắc
+    const colors = ['đen', 'trắng', 'đỏ', 'xanh', 'vàng', 'hồng', 'tím', 'xám', 'nâu', 'cam'];
+    colors.forEach(color => {
+      if (messageLower.includes(color)) preferences.colors.push(color);
+    });
+    
+    // Phân tích thương hiệu
+    const brands = ['adidas', 'nike', 'gucci', 'zara', 'h&m', 'uniqlo', 'puma', 'levi\'s', 'vans'];
+    brands.forEach(brand => {
+      if (messageLower.includes(brand)) preferences.brands.push(brand);
     });
     
     // Phân tích giá
@@ -131,6 +155,7 @@ const SmartChatBot = ({ products }: { products: Product[] }) => {
       const preferences = extractPreferences(message);
 
       newContext.recentTopics = Array.from(new Set([...topics, ...prevContext.recentTopics])).slice(0, 5); 
+      newContext.searchHistory = [...prevContext.searchHistory, message].slice(-10);
 
       if (preferences.categories) {
         newContext.userPreferences.preferredCategories = Array.from(
@@ -142,8 +167,39 @@ const SmartChatBot = ({ products }: { products: Product[] }) => {
           new Set([...preferences.sizes, ...prevContext.userPreferences.preferredSizes])
         );
       }
+      if (preferences.colors) {
+        newContext.userPreferences.preferredColors = Array.from(
+          new Set([...preferences.colors, ...prevContext.userPreferences.preferredColors])
+        );
+      }
+      if (preferences.brands) {
+        newContext.userPreferences.preferredBrands = Array.from(
+          new Set([...preferences.brands, ...prevContext.userPreferences.preferredBrands])
+        );
+      }
       if (preferences.priceRange) {
         newContext.userPreferences.priceRange = preferences.priceRange;
+      }
+      if (preferences.preferredRating) {
+        newContext.userPreferences.preferredRating = preferences.preferredRating;
+      }
+      if (preferences.preferredDiscount) {
+        newContext.userPreferences.preferredDiscount = preferences.preferredDiscount;
+      }
+      
+      // Lưu truy vấn sản phẩm
+      if (analyzeUserMessage(message)) {
+        const query = {
+          type: preferences.categories[0] || 'unknown',
+          color: preferences.colors[0],
+          size: preferences.sizes[0],
+          brand: preferences.brands[0],
+          minPrice: preferences.priceRange?.min,
+          maxPrice: preferences.priceRange?.max,
+          minRating: preferences.preferredRating,
+          minDiscount: preferences.preferredDiscount
+        };
+        newContext.previousQueries = [...prevContext.previousQueries, query].slice(-5);
       }
       
       newContext.lastInteraction = Date.now();

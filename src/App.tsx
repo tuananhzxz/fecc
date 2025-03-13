@@ -1,7 +1,7 @@
 import './App.css';
 import { ThemeProvider } from '@mui/material';
 import Navbar from './customer/components/navbar/Navbar';
-import customtheme from './customtheme/customtheme';
+import CustomTheme from './customtheme/customtheme';
 import Home from './customer/pages/home/Home';
 import Product from './customer/pages/product/Product';
 import ProductDetails from "./customer/pages/pagedetails/ProductDetails";
@@ -18,17 +18,29 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import PaymentSuccess from './customer/pages/PaymentSuccess';
 import Wishlist from './customer/pages/wishlist/Wishlist';
+import AboutUs from './customer/pages/home/support/AboutUs';
+import Advise from './customer/pages/home/support/Advise';
+import FAQs from './customer/pages/home/support/FAQs';
+import Guarantee from './customer/pages/home/support/Guarantee';
+import Contact from './customer/pages/home/support/Contact';
+import Support from './customer/pages/home/support/Support';
 
 
 function App() {
 
   return (
     <>
-    <ThemeProvider theme={customtheme}>
+    <ThemeProvider theme={CustomTheme}>
         <div className="">
             <Navbar />
             <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path='/about-us' element={<AboutUs />} />
+                <Route path='/advise' element={<Advise/>}/>
+                <Route path='/contact' element={<Contact/>}/>
+                <Route path='/faqs' element={<FAQs/>}/>
+                <Route path='/guarantee' element={<Guarantee/>}/>
+                <Route path='/support' element={<Support/>}/>
                 <Route path="/login-user" element={<Auth/>}/>
                 <Route path="/products/:category" element={<Product />} />
                 <Route path="/product-details/:categoryId/:name/:productId" element={<ProductDetails />} />
