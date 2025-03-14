@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Flame } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 interface DealCardProps {
   imageUrl: string;
@@ -7,6 +8,9 @@ interface DealCardProps {
   discount: number;
   dealId: number;
   createdAt: number;
+  categoryId : string;
+  productName : string;
+  productId : number;
   onDeleteDeal: (id: number) => void;
 }
 
@@ -16,9 +20,18 @@ const DealCard: React.FC<DealCardProps> = ({
   discount,
   dealId,
   createdAt,
+  categoryId,
+  productName,
+  productId,
   onDeleteDeal 
 }) => {
   const [timeLeft, setTimeLeft] = useState('');
+  const navigate = useNavigate();
+
+  const buyNow = () => {
+    window.scrollTo(0, 0);
+    navigate(`/product-details/${categoryId}/${productName}/${productId}`);
+  }
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -73,7 +86,7 @@ const DealCard: React.FC<DealCardProps> = ({
           </span>
         </div>
 
-        <button className="w-full py-2 rounded-lg font-bold text-white bg-gradient-to-r from-red-500 to-purple-600/30 hover:from-purple-600/30 hover:to-red-500 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
+        <button onClick={buyNow} className="w-full py-2 rounded-lg font-bold text-white bg-gradient-to-r from-red-500 to-purple-600/30 hover:from-purple-600/30 hover:to-red-500 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
           MUA NGAY
         </button>
       </div>

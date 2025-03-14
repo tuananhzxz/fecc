@@ -59,7 +59,7 @@ const CategorySheet = ({selectedCategory, setShowSheet}:any) => {
             ))
         }
     </div>
-</div>
+    </div>
         </Box>
     </div>
   )
