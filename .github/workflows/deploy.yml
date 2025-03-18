@@ -1,9 +1,14 @@
-name: Deploy React App to GitHub Pages
+name: Deploy
 
 on:
   push:
     branches:
       - master
+
+permissions:
+  id-token: write
+  contents: write  # Allows pushing to the repository
+  pages: write     # Required for deploying to GitHub Pages
 
 jobs:
   build-and-deploy:
@@ -28,5 +33,5 @@ jobs:
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ secrets.TANH_TOKEN }}
         publish_dir: ./build
