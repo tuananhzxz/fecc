@@ -24,7 +24,7 @@ import FAQs from './customer/pages/home/support/FAQs';
 import Guarantee from './customer/pages/home/support/Guarantee';
 import Contact from './customer/pages/home/support/Contact';
 import Support from './customer/pages/home/support/Support';
-
+import SellerProfile from './customer/pages/pagedetails/SellerProfile';
 
 function App() {
 
@@ -43,6 +43,7 @@ function App() {
                 <Route path='/support' element={<Support/>}/>
                 <Route path="/login-user" element={<Auth/>}/>
                 <Route path="/products/:category" element={<Product />} />
+                <Route path="/seller/profile-shop/:sellerId" element={<SellerProfile />} />
                 <Route path="/product-details/:categoryId/:name/:productId" element={<ProductDetails />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/wishlist" element={<Wishlist />} />

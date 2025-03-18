@@ -20,6 +20,7 @@ import { Review } from '../../../types/ReviewType';
 import { addItemToCart } from '../../../state/customer/CartSlice';
 import { toast } from 'react-toastify';
 import { addToWishlist } from '../../../state/wishlist/WishListSlice';
+import { fetchSellerByProductId } from '../../../state/seller/SellerSlice';
 
 const ProductDetails = () => {
   const { productId } = useParams<{ 
@@ -30,8 +31,8 @@ const ProductDetails = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { selectedProduct: product, loading } = useAppSelector(state => state.product);
-  const { reviews, loading: reviewLoading, error: reviewError } = useAppSelector(state => state.reviewSlice);
-
+  const { reviews } = useAppSelector(state => state.reviewSlice);
+  const { profile } = useAppSelector(state => state.seller);
   const [selectedImg, setSelectedImg] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedColor, setSelectedColor] = useState('');
@@ -47,6 +48,7 @@ const ProductDetails = () => {
 
   useEffect(() => {
     if (productId) {
+      dispatch(fetchSellerByProductId(Number(productId)));
       dispatch(getProductById(Number(productId)));
       dispatch(fetchReviewsByProductId(Number(productId)));
     }
@@ -361,6 +363,29 @@ const ProductDetails = () => {
                       -{discountPercent}% Giảm
                     </span>
                   )}
+                </div>
+                <div className='flex items-center gap-2 mt-2'>
+                  <span className="text-sm text-gray-500">
+                    Được bán bởi
+                  </span>
+                  <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg w-fit">
+                    <img src={profile?.businessDetails?.banner || 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/800px-Placeholder_view_vector.svg.png'} alt="Banner" className="w-10 h-10 rounded-full" />
+                    <span className="text-sm text-gray-500">
+                      {profile?.sellerName}
+                    </span>
+                    </div>
+                  <div className='flex items-center gap-2 mt-2'>
+                    <Link 
+                      to={`/seller/profile-shop/${profile?.id}`} 
+                      className='flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 transition-colors px-3 py-1.5 bg-blue-50 rounded-full font-medium'
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                      </svg>
+                      Xem cửa hàng
+                    </Link>
+                  </div>
                 </div>
               </div>
 

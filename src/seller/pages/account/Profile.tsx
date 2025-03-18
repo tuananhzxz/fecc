@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   User,
   Edit
@@ -9,23 +9,33 @@ import {
   DialogContent,
   Grid,
   Typography,
-  Box
+  Box,
+  Button,
+  Snackbar,
+  Alert
 } from "@mui/material";
 import { useAppDispatch, useAppSelector } from '../../../state/Store';
 import PersonalDetails from './PersionalDetails';
 import BusinessDetails from './BussinessDetails';
 import PickupAddress from './PickupAddress';
 import BankDetails from './BankDetails';
-import { fetchSellerProfile } from '../../../state/seller/SellerSlice';
+import { fetchSellerProfile, updateSellerBanner } from '../../../state/seller/SellerSlice';
+import { uploadToCloud } from '../../../utils/uploadToCloud';
+import { bool } from 'yup';
 
 
 const Profile: React.FC = () => {
   const dispatch = useAppDispatch();
   const profile = useAppSelector((state) => state.seller.profile);
+  const [uploadImage, setUploadImage] = useState(false);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
   const [openPersonal, setOpenPersonal] = useState(false);
   const [openBusiness, setOpenBusiness] = useState(false);
   const [openAddress, setOpenAddress] = useState(false);
   const [openBank, setOpenBank] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('sellerToken');
@@ -35,10 +45,81 @@ const Profile: React.FC = () => {
           console.log("Profile Response:", response);
         })
         .catch((error) => {
-          console.error("Profile Error:", error); // Log any errors
+          console.error("Profile Error:", error);
         });
     }
   }, [dispatch]);
+
+  const handleImageClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleChangeImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      const file = files[0];
+      
+      // Kiểm tra kích thước file (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setSnackbarMessage('File quá lớn. Vui lòng chọn file nhỏ hơn 5MB');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        return;
+      }
+
+      // Kiểm tra loại file
+      if (!file.type.startsWith('image/')) {
+        setSnackbarMessage('Vui lòng chọn file ảnh');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        return;
+      }
+
+      setUploadImage(true);
+      
+      try {
+        const uploadedUrl = await uploadToCloud(file);
+        
+        if (!uploadedUrl || typeof uploadedUrl !== 'string') {
+          throw new Error('Invalid upload response');
+        }
+
+        // Cập nhật banner trong store
+        const token = localStorage.getItem('sellerToken');
+        let flag = false;
+        if (token) {
+          dispatch(updateSellerBanner(uploadedUrl));
+          flag = true;
+        }
+        setSnackbarMessage('Tải ảnh lên thành công!');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+        if(flag){
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error('Upload error:', error);
+        setSnackbarMessage('Lỗi khi tải ảnh lên!');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+      }
+    } catch (error) {
+      console.error('Error handling image:', error);
+      setSnackbarMessage('Có lỗi xảy ra khi xử lý ảnh!');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+    } finally {
+      setUploadImage(false);
+    }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
+  };
 
   const renderEditDialog = (
     open: boolean,
@@ -129,6 +210,7 @@ const Profile: React.FC = () => {
           }}
         >
           <Box
+            onClick={handleImageClick}
             sx={{
               width: 150,
               height: 150,
@@ -138,10 +220,41 @@ const Profile: React.FC = () => {
               justifyContent: 'center',
               alignItems: 'center',
               bgcolor: 'white',
-              boxShadow: 3
+              boxShadow: 3,
+              cursor: 'pointer',
+              position: 'relative',
+              overflow: 'hidden'
             }}
           >
-            <User size={80} color="gray" />
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              hidden 
+              accept="image/*" 
+              onChange={handleChangeImage} 
+            />
+            <img 
+              src={profile?.businessDetails?.banner || 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3f/Placeholder_view_vector.svg/800px-Placeholder_view_vector.svg.png'} 
+              alt="Banner" 
+              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
+            />
+            {uploadImage && (
+              <Box 
+                sx={{ 
+                  position: 'absolute', 
+                  top: 0, 
+                  left: 0, 
+                  width: '100%', 
+                  height: '100%', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  backgroundColor: 'rgba(0,0,0,0.5)' 
+                }}
+              >
+                <Typography variant="body2" color="white">Đang tải...</Typography>
+              </Box>
+            )}
           </Box>
           <Box sx={{ ml: 3 }}>
             <Typography variant="h4" color="text.primary">
@@ -208,6 +321,18 @@ const Profile: React.FC = () => {
       {renderEditDialog(openBusiness, () => setOpenBusiness(false), BusinessDetails)}
       {renderEditDialog(openAddress, () => setOpenAddress(false), PickupAddress)}
       {renderEditDialog(openBank, () => setOpenBank(false), BankDetails)}
+
+      {/* Snackbar for notifications */}
+      <Snackbar 
+        open={snackbarOpen} 
+        autoHideDuration={6000} 
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
