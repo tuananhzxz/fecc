@@ -4,7 +4,8 @@ import {
   Inventory,
   Add,
   AccountBalanceWallet,
-  AccountBox
+  AccountBox,
+  Chat
 } from '@mui/icons-material';
 import { 
   ShoppingBag,
@@ -49,6 +50,12 @@ const menu = [
     path: "/seller/transaction",
     icon: Receipt,
     activeIcon: Receipt
+  },
+  {
+    name: "Tin nhắn",
+    path: "/seller/messages",
+    icon: Chat,
+    activeIcon: Chat
   }
 ];
 

@@ -5,7 +5,9 @@ import { getSellerById } from '../../../state/seller/SellerSlice';
 import { 
   CircularProgress, Grid, Card, CardMedia, CardContent, 
   Typography, Container, Box, Rating, Chip, 
-  Avatar, Tab, Tabs, IconButton
+  Avatar, Tab, Tabs, IconButton,
+  Button,
+  Dialog,DialogActions, TextField, DialogContent,DialogTitle,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -14,14 +16,25 @@ import EmailIcon from '@mui/icons-material/Email';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import FavoriteIcon from '@mui/icons-material/Favorite';
-import ShareIcon from '@mui/icons-material/Share';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import GridViewIcon from '@mui/icons-material/GridView';
 import ViewListIcon from '@mui/icons-material/ViewList';
-import { api } from '../../../config/Api';
+import ChatIcon from '@mui/icons-material/Chat';
+import SendIcon from '@mui/icons-material/Send';
+import { api, API_URL } from '../../../config/Api';
 import { Product } from '../../../state/customer/ProductCustomerSlice';
 import { toast } from 'react-toastify';
 import { addToWishlist } from '../../../state/wishlist/WishListSlice';
+import { Client } from '@stomp/stompjs'; 
+import SockJS from 'sockjs-client';
+import { useAuth } from '../../../customhook/useAuth';
+
+interface ChatMessage {
+  id?: number;
+  text: string;
+  sender: 'user' | 'seller';
+  timestamp: Date;
+  read?: boolean;
+}
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -58,6 +71,13 @@ const SellerProfile: React.FC = () => {
   const [productsError, setProductsError] = useState<string | null>(null);
   const [tabValue, setTabValue] = useState(0);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [chatOpen, setChatOpen] = useState<boolean>(false);
+  const [message, setMessage] = useState<string>('');
+  const { user, isAuthenticated } = useAuth();
+  const [chatRoomId, setChatRoomId] = useState<number | null>(null);
+  const [stompClient, setStompClient] = useState<Client | null>(null);
+  const [connecting, setConnecting] = useState<boolean>(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
     if (sellerId) {
@@ -66,9 +86,227 @@ const SellerProfile: React.FC = () => {
   }, [dispatch, sellerId]);
 
   useEffect(() => {
+    if (chatOpen && user && sellerId && !stompClient) {
+      setConnecting(true);
+      
+      const client = new Client({
+        webSocketFactory: () => new SockJS(`${API_URL}/ws`),
+        debug: function (str) {
+          console.log('WebSocket debug:', str);
+        },
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+      });
+
+      client.onConnect = () => {
+        console.log('WebSocket connected successfully');
+        setConnecting(false);
+        setStompClient(client);
+        
+        // Subscribe to user's private queue
+        if (user.id) {
+          client.subscribe(`/user/${user.id}/queue/messages`, (message) => {
+            console.log('Received message on user queue:', message.body);
+            const receivedMsg = JSON.parse(message.body);
+            handleReceivedMessage(receivedMsg);
+          });
+        }
+      };
+
+      client.onStompError = (frame) => {
+        console.error('STOMP error:', frame);
+        setConnecting(false);
+      };
+
+      client.activate();
+
+      return () => {
+        if (client && client.active) {
+          client.deactivate();
+          setStompClient(null);
+        }
+      };
+    }
+  }, [chatOpen, user, sellerId]);
+
+  useEffect(() => {
+    if (stompClient && stompClient.active && chatRoomId) {
+      // Subscribe to the specific chat room
+      const subscription = stompClient.subscribe(`/topic/chat/${chatRoomId}`, (message) => {
+        const receivedMsg = JSON.parse(message.body);
+        handleReceivedMessage(receivedMsg);
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+  }, [stompClient, chatRoomId]);
+
+  useEffect(() => {
+    if (chatRoomId && chatOpen) {
+      fetchChatHistory();
+    }
+  }, [chatRoomId, chatOpen]);
+
+  const fetchChatRoom = async () => {
+    if (!user?.id || !sellerId) return;
+    
+    try {
+      console.log('Fetching chat room for user', user.id, 'and seller', sellerId);
+      const response = await api.get(`/api/chat/room`, {
+        params: {
+          userId: user.id,
+          sellerId: sellerId
+        }
+      });
+      
+      if (response.data) {
+        console.log('Chat room found:', response.data);
+        setChatRoomId(response.data.id);
+        return response.data.id;
+      }
+    } catch (error) {
+      console.error('Error fetching chat room:', error);
+      // If no chat room exists, we'll create one when sending the first message
+    }
+  };
+
+const fetchChatHistory = async (roomId?: number) => {
+    const chatId = roomId || chatRoomId;
+    if (!chatId) {
+      console.log('No chat room ID available to fetch history');
+      return;
+    }
+    
+    try {
+      console.log('Fetching chat history for room:', chatId);
+      const response = await api.get(`/api/chat/messages/${chatId}`);
+      
+      if (response.data && Array.isArray(response.data)) {
+        console.log('Chat history received:', response.data);
+        const formattedMessages = response.data.map(msg => ({
+          id: msg.id,
+          text: msg.content,
+          sender: msg.senderType.toLowerCase() === 'user' ? 'user' : 'seller',
+          timestamp: new Date(msg.timestamp),
+          read: msg.read
+        })) as ChatMessage[];
+        
+        setChatMessages(formattedMessages);
+      }
+    } catch (error) {
+      console.error('Error fetching chat history:', error);
+      toast.error('Không thể tải lịch sử chat. Vui lòng thử lại sau.', {
+        position: "bottom-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handleReceivedMessage = (msg: any) => {
+    console.log('Handling received message:', msg);
+    
+    // Kiểm tra xem tin nhắn có thuộc về chat room hiện tại không
+    if (chatRoomId && msg.chatRoomId !== chatRoomId) {
+      console.log('Message is for a different chat room');
+      return;
+    }
+    
+    // Nếu chưa có chatRoomId, cập nhật
+    if (!chatRoomId && msg.chatRoomId) {
+      setChatRoomId(msg.chatRoomId);
+    }
+    
+    // Thêm tin nhắn vào danh sách
+    setChatMessages(prev => {
+      // Kiểm tra xem tin nhắn đã tồn tại chưa
+      if (msg.id && prev.some(m => m.id === msg.id)) {
+        return prev;
+      }
+      
+      // Nếu là tin nhắn mới từ người dùng hiện tại, không thêm vào
+      if (msg.senderType === 'USER' && msg.senderId === user?.id) {
+        return prev;
+      }
+      
+      return [...prev, {
+        id: msg.id,
+        text: msg.content,
+        sender: msg.senderType.toLowerCase() === 'user' ? 'user' : 'seller',
+        timestamp: new Date(msg.timestamp || Date.now()),
+        read: msg.read
+      }];
+    });
+  };
+
+  // Update the handleSendMessage function
+  const handleSendMessage = () => {
+    if (!message.trim() || !user) {
+      return;
+    }
+    
+    // Tạo message object với đầy đủ thông tin
+    const messageToSend = {
+      content: message,
+      messageType: 'TEXT',
+      senderId: user.id,
+      senderType: 'USER',
+      chatRoomId: chatRoomId,
+      sellerId: Number(sellerId)
+    };
+    
+    console.log('Sending message:', messageToSend);
+    
+    // Add message to UI immediately
+    setChatMessages(prev => [
+      ...prev,
+      {
+        text: message,
+        sender: 'user',
+        timestamp: new Date()
+      }
+    ]);
+    
+    // Nếu có WebSocket connection, gửi qua WebSocket
+    if (stompClient && stompClient.active) {
+      stompClient.publish({
+        destination: '/app/chat.send',
+        body: JSON.stringify(messageToSend)
+      });
+    } else {
+      // Fallback to REST API
+      sendMessageViaRest(messageToSend);
+    }
+    
+    setMessage('');
+  };
+  
+  const sendMessageViaRest = async (messageData: any) => {
+    if (!user?.id || !sellerId) return;
+    
+    try {
+      console.log('Sending message via REST:', messageData); // Log để debug
+      const response = await api.post('/api/chat/message', messageData);
+      console.log('Message sent successfully:', response.data); // Log để debug
+      
+      // Nếu chưa có chatRoomId, lấy từ response
+      if (!chatRoomId && response.data.chatRoomId) {
+        setChatRoomId(response.data.chatRoomId);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast.error('Không thể gửi tin nhắn. Vui lòng thử lại sau.', {
+        position: "bottom-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  useEffect(() => {
     const fetchSellerProducts = async () => {
       if (!sellerId) return;
-      
       try {
         setProductsLoading(true);
         const response = await api.get(`/api/seller/product/${sellerId}`);
@@ -103,6 +341,39 @@ const SellerProfile: React.FC = () => {
       });
     }
   };
+
+  const handleOpenChat = async () => {
+    if (!isAuthenticated || !user) {
+      toast.error('Vui lòng đăng nhập để sử dụng tính năng chat!', {
+        position: "bottom-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    setChatOpen(true);
+    
+    try {
+      // Fetch chat room first
+      const roomId = await fetchChatRoom();
+      
+      if (roomId) {
+        // If room exists, fetch chat history
+        await fetchChatHistory(roomId);
+      }
+    } catch (error) {
+      console.error('Error initializing chat:', error);
+      toast.error('Không thể khởi tạo chat. Vui lòng thử lại sau.', {
+        position: "bottom-right",
+        autoClose: 3000,
+      });
+    }
+  };
+
+  const handleCloseChat = () => {
+    setChatOpen(false);
+    setChatMessages([]); // Clear messages when closing
+  }
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -190,7 +461,7 @@ const SellerProfile: React.FC = () => {
                 <VerifiedIcon color="primary" sx={{ ml: 1 }} />
               </Box>
 
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex',alignItems: 'center', gap: 2 }}>
                 <Chip
                   icon={<StorefrontIcon />}
                   label={profile.businessDetails?.businessName || 'Cửa hàng'}
@@ -209,6 +480,23 @@ const SellerProfile: React.FC = () => {
                     '& .MuiChip-icon': { color: 'white' } 
                   }}
                 />
+                <Button
+                  variant="contained"
+                  startIcon={<ChatIcon />}
+                  onClick={handleOpenChat}
+                  sx={{
+                    borderRadius: '24px',
+                    px: 3,
+                    py: 1,
+                    bgcolor: 'primary.main',
+                    '&:hover': {
+                      bgcolor: 'primary.dark',
+                    },
+                    alignSelf: 'center'
+                  }}
+                >
+                  Chat với người bán
+                </Button> 
               </Box>
             </Box>
           </Box>
@@ -578,6 +866,154 @@ const SellerProfile: React.FC = () => {
           </Box>
         </TabPanel>
       </Box>
+
+      <Dialog 
+        open={chatOpen} 
+        onClose={handleCloseChat}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: '12px',
+            height: '70vh'
+          }
+        }}
+      >
+        <DialogTitle sx={{ 
+          borderBottom: '1px solid', 
+          borderColor: 'divider',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2
+        }}>
+          <Avatar 
+            src={profile?.businessDetails?.logo} 
+            alt={profile?.sellerName}
+          />
+          <Box>
+            <Typography variant="h6">{profile?.sellerName}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              {profile?.businessDetails?.businessName}
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent sx={{ 
+          p: 2, 
+          display: 'flex', 
+          flexDirection: 'column',
+          flexGrow: 1,
+          overflow: 'auto'
+        }}>
+          <Box sx={{ 
+            flexGrow: 1, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: 2,
+            mb: 2,
+            overflow: 'auto'
+          }}>
+            {connecting ? (
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                height: '100%'
+              }}>
+                <CircularProgress size={40} sx={{ mb: 2 }} />
+                <Typography variant="body1" color="text.secondary">
+                  Đang kết nối...
+                </Typography>
+              </Box>
+            ) : chatMessages.length === 0 ? (
+              <Box sx={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                height: '100%',
+                opacity: 0.7
+              }}>
+                <ChatIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
+                <Typography variant="body1" color="text.secondary" align="center">
+                  Bắt đầu cuộc trò chuyện với {profile?.sellerName}
+                </Typography>
+              </Box>
+            ) : (
+              chatMessages.map((msg, index) => (
+                <Box 
+                  key={msg.id || index}
+                  sx={{
+                    alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                    maxWidth: '80%',
+                    bgcolor: msg.sender === 'user' ? 'primary.main' : 'grey.100',
+                    color: msg.sender === 'user' ? 'white' : 'text.primary',
+                    p: 2,
+                    borderRadius: msg.sender === 'user' 
+                      ? '16px 16px 4px 16px' 
+                      : '16px 16px 16px 4px',
+                  }}
+                >
+                  <Typography variant="body1">{msg.text}</Typography>
+                  <Typography variant="caption" sx={{ 
+                    display: 'block', 
+                    mt: 0.5,
+                    opacity: 0.8,
+                    textAlign: msg.sender === 'user' ? 'right' : 'left'
+                  }}>
+                    {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    {msg.read && msg.sender === 'user' && (
+                      <span style={{ marginLeft: '4px' }}>✓</span>
+                    )}
+                  </Typography>
+                </Box>
+              ))
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ 
+          p: 2, 
+          borderTop: '1px solid', 
+          borderColor: 'divider',
+          display: 'flex',
+          gap: 1
+        }}>
+          <TextField
+            fullWidth
+            placeholder="Nhập tin nhắn..."
+            variant="outlined"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+            size="small"
+            disabled={connecting}
+            sx={{ 
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '24px',
+              }
+            }}
+          />
+          <IconButton 
+            color="primary" 
+            onClick={handleSendMessage}
+            disabled={!message.trim() || connecting}
+            sx={{ 
+              bgcolor: 'primary.main', 
+              color: 'white',
+              '&:hover': {
+                bgcolor: 'primary.dark',
+              },
+              '&.Mui-disabled': {
+                bgcolor: 'action.disabledBackground',
+                color: 'action.disabled'
+              }
+            }}
+          >
+            <SendIcon />
+          </IconButton>
+        </DialogActions>
+      </Dialog>
+
     </Container>
   );
 };

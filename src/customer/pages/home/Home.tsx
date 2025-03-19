@@ -11,6 +11,7 @@ import { useAppDispatch, useAppSelector } from '../../../state/Store';
 import { getHomeCategories } from '../../../state/admin/HomeCategorySlice';
 import SmartChatBot from './chatbot/SmartBot';
 import { getProducts } from '../../../state/customer/ProductCustomerSlice';
+import { checkTokenExpire } from '../../../utils/checkToken';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const Home = () => {
   const { homeCategorySlice } = useAppSelector((state) => state);
 
   useEffect(() => {
+    checkTokenExpire();
     dispath(getHomeCategories());
     dispath(getProducts());
   }, [dispath]);
