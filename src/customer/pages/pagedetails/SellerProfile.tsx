@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../../state/Store';
 import { getSellerById } from '../../../state/seller/SellerSlice';
@@ -78,6 +78,24 @@ const SellerProfile: React.FC = () => {
   const [stompClient, setStompClient] = useState<Client | null>(null);
   const [connecting, setConnecting] = useState<boolean>(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = (forceSmooth = false) => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: forceSmooth ? "smooth" : "auto"
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      const timer = setTimeout(() => {
+        scrollToBottom(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [chatMessages]);
 
   useEffect(() => {
     if (sellerId) {
@@ -230,6 +248,8 @@ const fetchChatHistory = async (roomId?: number) => {
       if (msg.senderType === 'USER' && msg.senderId === user?.id) {
         return prev;
       }
+
+      scrollToBottom();
       
       return [...prev, {
         id: msg.id,
@@ -268,6 +288,8 @@ const fetchChatHistory = async (roomId?: number) => {
         timestamp: new Date()
       }
     ]);
+
+    scrollToBottom(false);
     
     // Nếu có WebSocket connection, gửi qua WebSocket
     if (stompClient && stompClient.active) {
@@ -352,7 +374,7 @@ const fetchChatHistory = async (roomId?: number) => {
     }
 
     setChatOpen(true);
-    
+    scrollToBottom();
     try {
       // Fetch chat room first
       const roomId = await fetchChatRoom();
@@ -940,34 +962,38 @@ const fetchChatHistory = async (roomId?: number) => {
                 </Typography>
               </Box>
             ) : (
-              chatMessages.map((msg, index) => (
-                <Box 
-                  key={msg.id || index}
-                  sx={{
-                    alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                    maxWidth: '80%',
-                    bgcolor: msg.sender === 'user' ? 'primary.main' : 'grey.100',
-                    color: msg.sender === 'user' ? 'white' : 'text.primary',
-                    p: 2,
-                    borderRadius: msg.sender === 'user' 
-                      ? '16px 16px 4px 16px' 
-                      : '16px 16px 16px 4px',
-                  }}
-                >
-                  <Typography variant="body1">{msg.text}</Typography>
-                  <Typography variant="caption" sx={{ 
-                    display: 'block', 
-                    mt: 0.5,
-                    opacity: 0.8,
-                    textAlign: msg.sender === 'user' ? 'right' : 'left'
-                  }}>
-                    {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                    {msg.read && msg.sender === 'user' && (
-                      <span style={{ marginLeft: '4px' }}>✓</span>
-                    )}
-                  </Typography>
-                </Box>
-              ))
+              <>
+                {chatMessages.map((msg, index) => (
+                  <Box 
+                    key={msg.id || index}
+                    sx={{
+                      alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                      maxWidth: '80%',
+                      bgcolor: msg.sender === 'user' ? 'primary.main' : 'grey.100',
+                      color: msg.sender === 'user' ? 'white' : 'text.primary',
+                      p: 2,
+                      borderRadius: msg.sender === 'user' 
+                        ? '16px 16px 4px 16px' 
+                        : '16px 16px 16px 4px',
+                    }}
+                  >
+                    <Typography variant="body1">{msg.text}</Typography>
+                    <Typography variant="caption" sx={{ 
+                      display: 'block', 
+                      mt: 0.5,
+                      opacity: 0.8,
+                      textAlign: msg.sender === 'user' ? 'right' : 'left'
+                    }}>
+                      {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      {msg.read && msg.sender === 'user' && (
+                        <span style={{ marginLeft: '4px' }}>✓</span>
+                      )}
+                    </Typography>
+                  </Box>
+                ))}
+                {/* Add this div at the end of your messages to scroll to */}
+                <div ref={messagesEndRef} />
+              </>
             )}
           </Box>
         </DialogContent>

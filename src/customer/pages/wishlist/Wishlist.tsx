@@ -7,13 +7,14 @@ import { useAppDispatch } from '../../../state/Store';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../../state/Store';
 import { fetchWishlist } from '../../../state/wishlist/WishListSlice';
+import { useAuth } from '../../../customhook/useAuth';
 
 const Wishlist = () => {
   const dispatch = useAppDispatch();
   const { wishlist, loading, error } = useSelector((state: RootState) => state.wishlist);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const isAuthenticated = useSelector((state: RootState) => state.auth.User_Role !== null);
+  const {isAuthenticated} = useAuth();
 
   useEffect(() => {
     if (isAuthenticated) {

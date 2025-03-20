@@ -10,14 +10,13 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { api, API_URL } from '../../../config/Api';
-import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '../../../state/Store';
 import { fetchSellerProfile } from '../../../state/seller/SellerSlice';
 
 interface ChatMessage {
   id?: number;
   content: string;
-  sender: 'user' | 'seller';
+  senderType: 'USER' | 'SELLER';
   senderId: number;
   chatRoomId: number;
   timestamp: Date;
@@ -28,9 +27,10 @@ interface ChatRoom {
   id: number;
   userId: number;
   sellerId: number;
-  lastMessage?: string;
+  lastMessagePreview?: string;
   lastMessageTime?: Date;
   unreadCount: number;
+  userFullName: string;
 }
 
 const Messages: React.FC = () => {
@@ -165,16 +165,13 @@ const Messages: React.FC = () => {
   };
 
   const handleReconnect = () => {
-    // Only try to reconnect if we haven't exceeded max attempts
     if (reconnectAttempts < maxReconnectAttempts) {
       setReconnectAttempts(prev => prev + 1);
       
-      // Clear any existing timeout
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
       
-      // Set a timeout to reconnect
       reconnectTimeoutRef.current = setTimeout(() => {
         console.log(`Attempting to reconnect (${reconnectAttempts + 1}/${maxReconnectAttempts})...`);
         connectWebSocket();
@@ -212,7 +209,11 @@ const Messages: React.FC = () => {
     setLoadingMessages(true);
     try {
       const response = await api.get(`/api/chat/messages/${roomId}`);
-      setMessages(response.data);
+      const formattedMessages = response.data.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      }));
+      setMessages(formattedMessages);
     } catch (error) {
       console.error('Error fetching messages:', error);
       setError('Không thể tải tin nhắn');
@@ -233,25 +234,43 @@ const Messages: React.FC = () => {
   };
 
   const handleReceivedMessage = (msg: ChatMessage) => {
-    // Update messages if this is for the currently selected room
+    // Kiểm tra xem tin nhắn có thuộc về chat room hiện tại không
     if (selectedRoom && msg.chatRoomId === selectedRoom.id) {
-      setMessages(prev => [...prev, msg]);
-      // Mark as read since we're viewing this room
-      markMessagesAsRead(selectedRoom.id);
-    } else {
-      // Otherwise increment unread count for the room
-      setChatRooms(prev => prev.map(room => {
-        if (room.id === msg.chatRoomId) {
-          return {
-            ...room,
-            lastMessage: msg.content,
-            lastMessageTime: new Date(msg.timestamp),
-            unreadCount: room.unreadCount + 1
-          };
+      // Kiểm tra xem tin nhắn đã tồn tại chưa
+      setMessages(prev => {
+        if (msg.id && prev.some(m => m.id === msg.id)) {
+          return prev;
         }
-        return room;
-      }));
+
+        const messageContainer = document.querySelector('.message-container');
+        const isNearBottom = messageContainer && 
+          (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight < 100);
+        
+        if (isNearBottom) {
+          setTimeout(() => {
+            scrollToBottom();
+          }, 100);
+        }
+
+        return [...prev, msg];
+      });
+      
+      // Đánh dấu tin nhắn đã đọc nếu đang xem phòng chat này
+      markMessagesAsRead(selectedRoom.id);
     }
+
+    // Cập nhật danh sách chat rooms
+    setChatRooms(prev => prev.map(room => {
+      if (room.id === msg.chatRoomId) {
+        return {
+          ...room,
+          lastMessage: msg.content,
+          lastMessageTime: new Date(msg.timestamp),
+          unreadCount: room.unreadCount + 1
+        };
+      }
+      return room;
+    }));
   };
 
   const handleSendMessage = () => {
@@ -265,28 +284,19 @@ const Messages: React.FC = () => {
       chatRoomId: selectedRoom.id
     };
 
-    // Optimistically add message to UI
+    // Thêm tin nhắn vào UI ngay lập tức
     const optimisticMessage: ChatMessage = {
       content: newMessage,
-      sender: 'seller',
+      senderType: 'SELLER',
       senderId: profile.id,
       chatRoomId: selectedRoom.id,
       timestamp: new Date(),
       read: false
     };
+
     setMessages(prev => [...prev, optimisticMessage]);
 
-    // Try to send via WebSocket first, fall back to REST
-    if (stompClient && stompClient.active && connectionStatus === 'connected') {
-      stompClient.publish({
-        destination: '/app/chat.send',
-        body: JSON.stringify(messageToSend)
-      });
-    } else {
-      sendMessageViaRest(messageToSend);
-    }
-
-    // Update the chat room's last message in the list
+    // Cập nhật last message trong danh sách chat rooms
     setChatRooms(prev => prev.map(room => {
       if (room.id === selectedRoom.id) {
         return {
@@ -297,6 +307,16 @@ const Messages: React.FC = () => {
       }
       return room;
     }));
+
+    // Gửi tin nhắn qua WebSocket hoặc REST API
+    if (stompClient && stompClient.active) {
+      stompClient.publish({
+        destination: '/app/chat.send',
+        body: JSON.stringify(messageToSend)
+      });
+    } else {
+      sendMessageViaRest(messageToSend);
+    }
 
     setNewMessage('');
   };
@@ -310,9 +330,30 @@ const Messages: React.FC = () => {
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (behavior = 'smooth') => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: behavior as ScrollBehavior, 
+        block: 'end' 
+      });
+    }
   };
+  
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      
+      // Scroll when I send messages or when at bottom already
+      const messageContainer = document.querySelector('.message-container');
+      const isNearBottom = messageContainer && 
+        (messageContainer.scrollHeight - messageContainer.scrollTop - messageContainer.clientHeight < 100);
+      
+      if (lastMessage.senderType === 'SELLER' || isNearBottom) {
+        scrollToBottom();
+      }
+    }
+  }, [messages]);
 
   const handleRoomSelect = (room: ChatRoom) => {
     setSelectedRoom(room);
@@ -436,14 +477,14 @@ const Messages: React.FC = () => {
                         invisible={room.unreadCount === 0}
                       >
                         <Avatar sx={{ bgcolor: room.unreadCount > 0 ? 'secondary.main' : 'primary.main' }}>
-                          {room.userId.toString().charAt(0)}
+                          {room.userFullName.charAt(0).toUpperCase()}
                         </Avatar>
                       </Badge>
                     </ListItemAvatar>
                     <ListItemText
                       primary={
                         <Typography fontWeight={room.unreadCount > 0 ? 'bold' : 'normal'}>
-                          Người dùng {room.userId}
+                          {room.userFullName}
                         </Typography>
                       }
                       secondary={
@@ -453,7 +494,7 @@ const Messages: React.FC = () => {
                           noWrap
                           fontWeight={room.unreadCount > 0 ? 'medium' : 'normal'}
                         >
-                          {room.lastMessage || "Chưa có tin nhắn"}
+                          {room.lastMessagePreview || "Chưa có tin nhắn"}
                         </Typography>
                       }
                     />
@@ -514,203 +555,153 @@ const Messages: React.FC = () => {
       </Paper>
 
       {/* Chat Messages */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}>
-        {selectedRoom ? (
-          <>
-            <Paper
-              elevation={2} 
-              sx={{ 
-                p: 2, 
-                borderBottom: 1, 
-                borderColor: 'divider',
-                borderRadius: 0,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                zIndex: 10
-              }}
-            >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Avatar sx={{ bgcolor: 'primary.main' }}>
-                  {selectedRoom.userId.toString().charAt(0)}
-                </Avatar>
-                <Typography variant="h6">
-                  Người dùng {selectedRoom.userId}
-                </Typography>
+      
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          bgcolor: 'background.default'
+        }}
+      >
+        {/* Message display area */}
+        <Box
+          className="message-container"
+          sx={{
+            flex: 1,
+            overflow: 'auto',
+            p: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+          }}
+        >
+          {selectedRoom ? (
+            loadingMessages ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                <CircularProgress />
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  {connectionStatus === 'connected' ? 'Trực tuyến' : 'Ngoại tuyến'}
-                </Typography>
-              </Box>
-            </Paper>
-            
-            <Box
-              sx={{
-                flex: 1,
-                overflow: 'auto',
-                p: 3,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 1,
-                bgcolor: '#f5f5f5'
-              }}
-            >
-              {loadingMessages ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-                  <CircularProgress />
-                </Box>
-              ) : messages.length > 0 ? (
-                // Display messages grouped by date
-                Object.entries(groupMessagesByDate()).map(([dateString, dateMessages]) => (
-                  <Box key={dateString} sx={{ mb: 2 }}>
-                    <Box 
-                      sx={{ 
-                        display: 'flex', 
-                        justifyContent: 'center', 
-                        mb: 2 
+            ) : messages.length > 0 ? (
+              Object.entries(groupMessagesByDate()).map(([dateString, dateMessages]) => (
+                <Box key={dateString} sx={{ width: '100%' }}>
+                  <Typography
+                    variant="caption"
+                    align="center"
+                    sx={{
+                      display: 'block',
+                      textAlign: 'center',
+                      my: 2,
+                      color: 'text.secondary',
+                      position: 'relative',
+                      '&:before, &:after': {
+                        content: '""',
+                        position: 'absolute',
+                        top: '50%',
+                        width: '35%',
+                        height: '1px',
+                        backgroundColor: 'divider',
+                      },
+                      '&:before': {
+                        left: 0,
+                      },
+                      '&:after': {
+                        right: 0,
+                      },
+                    }}
+                  >
+                    {dateString}
+                  </Typography>
+                  {dateMessages.map((msg, index) => (
+                    <Box
+                      key={msg.id || `${dateString}-${index}`}
+                      sx={{
+                        alignSelf: msg.senderType === 'SELLER' ? 'flex-end' : 'flex-start',
+                        maxWidth: '70%',
+                        ml: msg.senderType === 'SELLER' ? 'auto' : 0,
+                        mr: msg.senderType === 'SELLER' ? 0 : 'auto',
+                        mb: 1.5,
                       }}
                     >
-                      <Typography 
-                        variant="caption" 
-                        sx={{ 
-                          bgcolor: 'rgba(0,0,0,0.1)', 
-                          px: 2, 
-                          py: 0.5, 
-                          borderRadius: 10 
-                        }}
-                      >
-                        {dateString}
-                      </Typography>
-                    </Box>
-                    
-                    {dateMessages.map((msg, index) => (
-                      <Box
-                        key={msg.id || `${msg.timestamp}-${index}`}
+                      <Paper
                         sx={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: msg.sender === 'seller' ? 'flex-end' : 'flex-start',
-                          mb: 1.5
+                          p: 2,
+                          bgcolor: msg.senderType === 'SELLER' ? 'primary.main' : 'grey.100',
+                          color: msg.senderType === 'SELLER' ? 'white' : 'text.primary',
+                          borderRadius: 2,
                         }}
                       >
-                        <Paper
-                          elevation={1}
+                        <Typography variant="body1">{msg.content}</Typography>
+                        <Typography
+                          variant="caption"
                           sx={{
-                            p: 2,
-                            maxWidth: '70%',
-                            borderRadius: 2,
-                            bgcolor: msg.sender === 'seller' ? 'primary.main' : 'white',
-                            color: msg.sender === 'seller' ? 'white' : 'text.primary',
-                            position: 'relative',
-                            '&::after': msg.sender === 'seller' ? {
-                              content: '""',
-                              position: 'absolute',
-                              bottom: 12,
-                              right: -8,
-                              width: 0,
-                              height: 0,
-                              border: '8px solid transparent',
-                              borderLeftColor: 'primary.main',
-                              borderRight: 0
-                            } : {
-                              content: '""',
-                              position: 'absolute',
-                              bottom: 12,
-                              left: -8,
-                              width: 0,
-                              height: 0,
-                              border: '8px solid transparent',
-                              borderRightColor: 'white',
-                              borderLeft: 0
-                            }
+                            display: 'block',
+                            mt: 0.5,
+                            opacity: 0.8,
+                            textAlign: msg.senderType === 'SELLER' ? 'right' : 'left'
                           }}
                         >
-                          <Typography variant="body1" sx={{ wordBreak: 'break-word' }}>
-                            {msg.content}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              display: 'block',
-                              mt: 0.5,
-                              opacity: 0.8,
-                              textAlign: 'right'
-                            }}
-                          >
-                            {formatMessageTime(msg.timestamp)}
-                          </Typography>
-                        </Paper>
-                      </Box>
-                    ))}
-                  </Box>
-                ))
-              ) : (
-                <Box sx={{ 
-                  display: 'flex', 
-                  justifyContent: 'center', 
-                  alignItems: 'center', 
-                  height: '100%',
-                  color: 'text.secondary' 
-                }}>
-                  <Typography>Hãy bắt đầu cuộc trò chuyện</Typography>
+                          {formatMessageTime(msg.timestamp)}
+                        </Typography>
+                      </Paper>
+                    </Box>
+                  ))}
                 </Box>
-              )}
-              <div ref={messagesEndRef} />
-            </Box>
-            
-            <Paper 
-              elevation={3}
-              sx={{ 
-                p: 2, 
-                borderTop: 1, 
-                borderColor: 'divider',
-                borderRadius: 0
-              }}
-            >
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <TextField
-                  fullWidth
-                  placeholder="Nhập tin nhắn..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  disabled={connectionStatus === 'connecting'}
-                  variant="outlined"
-                  size="small"
-                  autoComplete="off"
-                  InputProps={{
-                    sx: { borderRadius: 3, bgcolor: 'background.paper' }
-                  }}
-                />
-                <IconButton
-                  color="primary"
-                  onClick={handleSendMessage}
-                  disabled={!newMessage.trim() || connectionStatus === 'connecting'}
-                  sx={{ bgcolor: 'primary.main', color: 'white', '&:hover': { bgcolor: 'primary.dark' } }}
-                >
-                  <SendIcon />
-                </IconButton>
+              ))
+            ) : (
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'text.secondary' }}>
+                <Typography>Bắt đầu cuộc trò chuyện</Typography>
               </Box>
-            </Paper>
-          </>
-        ) : (
-          <Box
+            )
+          ) : (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'text.secondary' }}>
+              <Typography>Chọn một cuộc trò chuyện để bắt đầu</Typography>
+            </Box>
+          )}
+          <div ref={messagesEndRef} />
+        </Box>
+
+        {/* Message input area */}
+        {selectedRoom && (
+          <Paper
+            component="form"
             sx={{
+              p: 2,
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
-              height: '100%',
-              color: 'text.secondary',
-              gap: 2
+              gap: 1,
+              borderTop: 1,
+              borderColor: 'divider',
+            }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
             }}
           >
-            <Typography variant="h5">Chào mừng đến với tin nhắn</Typography>
-            <Typography align="center" color="text.secondary">
-              Chọn một cuộc trò chuyện từ danh sách bên trái để bắt đầu
-            </Typography>
-          </Box>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Nhập tin nhắn..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              size="small"
+              autoComplete="off"
+              sx={{ flex: 1 }}
+            />
+            <IconButton 
+              color="primary" 
+              type="submit" 
+              disabled={!newMessage.trim()}
+              sx={{ 
+                bgcolor: 'primary.main', 
+                color: 'white',
+                '&:hover': { bgcolor: 'primary.dark' },
+                '&.Mui-disabled': { bgcolor: 'action.disabledBackground', color: 'action.disabled' }
+              }}
+            >
+              <SendIcon />
+            </IconButton>
+          </Paper>
         )}
       </Box>
       
