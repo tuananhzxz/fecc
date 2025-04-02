@@ -34,12 +34,14 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { RootState, useAppDispatch } from '../../../state/Store';
 import { getSellerReport } from '../../../state/seller/report/SellerReportSlice';
 import { useSelector } from 'react-redux';
 import { getPaymentOrders } from '../../../state/seller/report/PaymentOrderSlice';
 import { PaymentOrderStatus } from '../../../types/PaymentOrder';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 
 const Payment = () => {
   const dispatch = useAppDispatch();
@@ -86,6 +88,25 @@ const Payment = () => {
   const successRate = calculateSuccessRate();
 
   const totalDt = (reports?.totalEarnings || 0) - (reports?.totalRefunds || 0); 
+
+  // Xuất dữ liệu ra Excel
+  const exportToExcel = () => {
+    const dataToExport = filteredPaymentOrders.map(payment => ({
+      'Ngày': new Date(payment.orders[0]?.orderDate || Date.now()).toLocaleDateString('vi-VN'),
+      'Thời gian': new Date(payment.orders[0]?.orderDate || Date.now()).toLocaleTimeString('vi-VN'),
+      'Tên khách hàng': payment.user?.fullName || 'Không có tên',
+      'Email': payment.user?.email || 'Không có email',
+      'Hình thức thanh toán': payment.paymentMethod || `#ORD${payment.id}`,
+      'Trạng thái': payment.status === 'SUCCESS' ? 'Thành công' : 
+                    payment.status === 'PENDING' ? 'Đang xử lý' : 'Thất bại',
+      'Số tiền': payment.amount.toLocaleString('vi-VN', {style: 'currency', currency: 'VND'})
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Lịch sử thanh toán');
+    XLSX.writeFile(wb, 'lich-su-thanh-toan.xlsx');
+  };
 
   // Lọc dữ liệu dựa trên các bộ lọc
   const filteredPaymentOrders = paymentOrders ? paymentOrders.filter(payment => {
@@ -146,14 +167,24 @@ const Payment = () => {
         <Typography variant="h4" className="font-bold text-gray-800 mb-4 md:mb-0">
           Thống kê thanh toán
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<HistoryIcon />}
-          className="bg-indigo-600 hover:bg-indigo-700"
-          onClick={() => navigate("/seller/transaction")}
-        >
-          Xem lịch sử
-        </Button>
+        <Box className="flex gap-2">
+          <Button
+            variant="contained"
+            startIcon={<FileDownloadIcon />}
+            className="bg-green-600 hover:bg-green-700"
+            onClick={exportToExcel}
+          >
+            Xuất Excel
+          </Button>
+          <Button
+            variant="contained"
+            startIcon={<HistoryIcon />}
+            className="bg-indigo-600 hover:bg-indigo-700"
+            onClick={() => navigate("/seller/transaction")}
+          >
+            Xem lịch sử
+          </Button>
+        </Box>
       </Box>
 
       {/* Stats Cards */}

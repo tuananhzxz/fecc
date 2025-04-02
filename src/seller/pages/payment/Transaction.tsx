@@ -17,6 +17,7 @@ import {
   Chip,
   Tabs,
   Tab,
+  TablePagination
 } from '@mui/material';
 import {
   FilterList as FilterIcon,
@@ -30,11 +31,13 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useAppDispatch, useAppSelector } from '../../../state/Store';
 import { getTransactionsBySellerId } from '../../../state/seller/transaction/TransactionSlice';
 import { OrderStatus } from '../../../types/orderType';
-
+import * as XLSX from 'xlsx';
 
 const Transaction = () => {
   const [tabValue, setTabValue] = React.useState(0);
   const [timeRange, setTimeRange] = useState('7days');
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const dispatch = useAppDispatch();
   const { transactions } = useAppSelector(state => state.transactionSlice);
 
@@ -81,7 +84,7 @@ const Transaction = () => {
     });
   };
 
-  // Get transactions for current periods
+  // Get transactions for current periods 
   const transaction7day = getFilteredTransactions(7);
   const transaction24h = getFilteredTransactions(1);
   const transaction30day = getFilteredTransactions(30);
@@ -216,6 +219,34 @@ const Transaction = () => {
   const chartData = generateChartData();
   const statusData = generateStatusData();
 
+  // Pagination handlers
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Export to Excel
+  const handleExportExcel = () => {
+    const dataToExport = displayedTransactions.map(transaction => ({
+      'Mã giao dịch': `#${transaction.id.toString().padStart(6, '0')}`,
+      'Khách hàng': transaction.customer.fullName,
+      'Email': transaction.customer.email,
+      'Trạng thái': statusTranslations[transaction.order.orderStatus],
+      'Ngày': getDateFromDate(transaction.date),
+      'Thời gian': getTimeFromDate(transaction.date),
+      'Số tiền': formatCurrency(transaction.order.totalSellingPrice || 0)
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Giao dịch');
+    XLSX.writeFile(wb, 'danh-sach-giao-dich.xlsx');
+  };
+
   return (
     <Box className="p-6 bg-gray-50 min-h-screen">
       {/* Header Section */}
@@ -224,6 +255,14 @@ const Transaction = () => {
           <Typography variant="h4" className="font-bold text-gray-800">
             Giao dịch
           </Typography>
+          <Button
+            variant="contained"
+            startIcon={<DownloadIcon />}
+            onClick={handleExportExcel}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            Xuất Excel
+          </Button>
         </Box>
 
         {/* Overview Cards */}
@@ -441,7 +480,9 @@ const Transaction = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {displayedTransactions.map((transaction) => (
+                {displayedTransactions
+                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                  .map((transaction) => (
                   <TableRow key={transaction.id} className="hover:bg-gray-50">
                     <TableCell className="font-medium">
                       #{transaction.id.toString().padStart(6, '0')}
@@ -498,6 +539,19 @@ const Transaction = () => {
               </TableBody>
             </Table>
           </TableContainer>
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25]}
+            component="div"
+            count={displayedTransactions.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="Số hàng mỗi trang:"
+            labelDisplayedRows={({ from, to, count }) => 
+              `${from}-${to} của ${count}`
+            }
+          />
         </Card>
       </Box>
     </Box>

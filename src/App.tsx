@@ -24,6 +24,8 @@ import FAQs from './customer/pages/home/support/FAQs';
 import Guarantee from './customer/pages/home/support/Guarantee';
 import Contact from './customer/pages/home/support/Contact';
 import Support from './customer/pages/home/support/Support';
+import Page404 from './component/Page404';
+
 import SellerProfile from './customer/pages/pagedetails/SellerProfile';
 
 function App() {
@@ -35,6 +37,7 @@ function App() {
             <Navbar />
             <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/404" element={<Page404 />} />
                 <Route path='/about-us' element={<AboutUs />} />
                 <Route path='/advise' element={<Advise/>}/>
                 <Route path='/contact' element={<Contact/>}/>
