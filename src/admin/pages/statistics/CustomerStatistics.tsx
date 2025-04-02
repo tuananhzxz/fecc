@@ -236,13 +236,6 @@ const CustomerStatistics = () => {
         <Typography variant="h4" fontWeight="bold">
           Thống kê khách hàng
         </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<Download />}
-          onClick={() => alert("Báo cáo sẽ được tải xuống!")}
-        >
-          Xuất báo cáo
-        </Button>
       </Box>
 
       {/* Summary Cards */}

@@ -27,11 +27,8 @@ import { OrderStatus } from "../../../types/orderType";
 
 type PaymentStatusMethod = "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
 
-const statusColors: Record<OrderStatus, string> = {
-  PENDING: "bg-yellow-100 text-yellow-800",
-  PLACED: "bg-blue-100 text-blue-800",
-  CONFIRMED: "bg-purple-100 text-purple-800",
-  SHIPPED: "bg-green-100 text-green-800",
+const statusColors: Record<string, string> = {
+  PENDING: "bg-blue-100 text-blue-800",
   DELIVERED: "bg-green-100 text-green-800",
   CANCELLED: "bg-red-100 text-red-800",
 };
@@ -50,11 +47,8 @@ const paymentStatusText: Record<PaymentStatusMethod, string> = {
   FAILED: "Thanh toán thất bại",
 };
 
-const statusText: Record<OrderStatus, string> = {
-  PENDING: "Chờ xác nhận",
-  PLACED: "Đang xử lý",
-  CONFIRMED: "Đã xác nhận",
-  SHIPPED: "Đã đưa đến điểm giao hàng",
+const statusText: Record<string, string> = {
+  PENDING: "Đang xử lý",
   DELIVERED: "Đã giao hàng",
   CANCELLED: "Đã hủy",
 };

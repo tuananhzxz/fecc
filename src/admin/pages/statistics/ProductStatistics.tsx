@@ -326,14 +326,18 @@ const ProductStatistics = () => {
           <BarChart
             data={topProducts}
             layout="vertical"
-            margin={{ top: 20, right: 30, left: 150, bottom: 5 }}
+            margin={{ top: 20, right: 30, left: 30, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               type="number"
               tickFormatter={(value) => `${value / 1000000}tr`}
             />
-            <YAxis dataKey="name" type="category" />
+             <YAxis 
+              dataKey="name" 
+              type="category" 
+              width={200}
+            />
             <Tooltip formatter={(value) => formatCurrency(value as number)} />
             <Legend />
             <Bar dataKey="sales" name="Doanh thu" fill="#8884d8" />
